@@ -7,7 +7,7 @@ import { jobsReapedTotal } from "../lib/metrics.js";
 
 const redis = createRedisClient("reaper");
 
-startMetricsServer(Number(process.env.REAPER_METRICS_PORT) || 9102, "reaper");
+startMetricsServer(Number(process.env.PORT) || Number(process.env.REAPER_METRICS_PORT) || 9102, "reaper");
 
 async function scan() {
   const processingJobs = await redis.lrange(config.queues.processing, 0, -1);

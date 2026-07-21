@@ -23,7 +23,7 @@ const redis = createRedisClient("worker");
 const WORKER_ID = `worker-${process.pid}`;
 const RECENT_JOBS_KEY = "recent:jobs";
 
-startMetricsServer(Number(process.env.WORKER_METRICS_PORT) || 9101, "worker");
+startMetricsServer(Number(process.env.PORT) || Number(process.env.WORKER_METRICS_PORT) || 9101, "worker");
 
 async function claimJob() {
   const raw = await redis.lmove(config.queues.main, config.queues.processing, "RIGHT", "LEFT");
