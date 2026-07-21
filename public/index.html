@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ReliableQueue — Live Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, sans-serif; background: #0f1115; color: #e6e6e6; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #8a8f98; margin-bottom: 24px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .card { background: #171a21; border: 1px solid #2a2e37; border-radius: 10px; padding: 18px; }
+  .card .label { font-size: 12px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 32px; font-weight: 700; margin-top: 6px; }
+  .main .value { color: #4f9dfd; }
+  .processing .value { color: #f5c542; }
+  .retry .value { color: #ff9f43; }
+  .dlq .value { color: #ff5c5c; }
+  table { width: 100%; border-collapse: collapse; background: #171a21; border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #2a2e37; }
+  th { color: #8a8f98; font-weight: 600; text-transform: uppercase; font-size: 11px; }
+  .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.completed { background: #1e3a2e; color: #4ade80; }
+  .badge.llm_task { background: #2a1e3a; color: #c084fc; }
+  .badge.standard { background: #1e2a3a; color: #60a5fa; }
+  .section-title { font-size: 15px; margin: 24px 0 10px; color: #c9ccd1; }
+  .empty { color: #5a5f68; padding: 20px; text-align: center; font-size: 13px; }
+  .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4ade80; margin-right: 6px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<h1><span class="pulse"></span>ReliableQueue - Live Dashboard</h1>
+<div class="sub" id="lastUpdate">Connecting...</div>
+<div style="display:flex; gap:10px; margin: 16px 0 24px; flex-wrap: wrap; align-items: center;">
+  <button onclick="submitDemo('submit-standard')" style="background:#2563eb; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">+ Standard Job</button>
+  <button onclick="submitDemo('submit-llm')" style="background:#7c3aed; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">+ LLM/RAG Job</button>
+  <button onclick="submitDemo('submit-duplicate')" style="background:#374151; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">+ Duplicate (prove idempotency)</button>
+  <span id="demo-status" style="font-size:12px; color:#8a8f98; margin-left:8px;"></span>
+</div>
+
+<div class="grid">
+  <div class="card main"><div class="label">Main Queue</div><div class="value" id="q-main">-</div></div>
+  <div class="card processing"><div class="label">Processing</div><div class="value" id="q-processing">-</div></div>
+  <div class="card retry"><div class="label">Retry (pending)</div><div class="value" id="q-retry">-</div></div>
+  <div class="card dlq"><div class="label">Dead Letter Queue</div><div class="value" id="q-dlq">-</div></div>
+</div>
+
+<div class="section-title">Recent Completed Jobs</div>
+<table>
+  <thead><tr><th>Job ID</th><th>Type</th><th>Duration</th><th>Completed At</th></tr></thead>
+  <tbody id="recent-body"><tr><td colspan="4" class="empty">Waiting for jobs...</td></tr></tbody>
+</table>
+
+<div class="section-title">Dead Letter Queue (sample)</div>
+<table>
+  <thead><tr><th>Job ID</th><th>Type</th><th>Retries</th><th>Reason</th></tr></thead>
+  <tbody id="dlq-body"><tr><td colspan="4" class="empty">No jobs in DLQ</td></tr></tbody>
+</table>
+
+<script>
+async function refresh() {
+  try {
+    const res = await fetch('/status');
+    const data = await res.json();
+
+    document.getElementById('q-main').textContent = data.queues.main;
+    document.getElementById('q-processing').textContent = data.queues.processing;
+    document.getElementById('q-retry').textContent = data.queues.retry;
+    document.getElementById('q-dlq').textContent = data.queues.dlq;
+    document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date(data.timestamp).toLocaleTimeString();
+
+    const recentBody = document.getElementById('recent-body');
+    recentBody.innerHTML = data.recent_jobs.length
+      ? data.recent_jobs.map(j => `
+          <tr>
+            <td>${j.job_id}</td>
+            <td><span class="badge ${j.job_type}">${j.job_type}</span></td>
+            <td>${(j.durationSec || 0).toFixed(2)}s</td>
+            <td>${new Date(j.at).toLocaleTimeString()}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" class="empty">Waiting for jobs...</td></tr>';
+
+    const dlqBody = document.getElementById('dlq-body');
+    dlqBody.innerHTML = data.dlq_sample.length
+      ? data.dlq_sample.map(j => `
+          <tr>
+            <td>${j.job_id}</td>
+            <td><span class="badge ${j.job_type}">${j.job_type}</span></td>
+            <td>${j.retry_count}</td>
+            <td>${j.dlq_reason}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No jobs in DLQ</td></tr>';
+  } catch (err) {
+    document.getElementById('lastUpdate').textContent = 'Connection lost — retrying...';
+  }
+}
+
+const API_KEY = "reliablequeue-demo-key-2026"; // matches .env API_KEY
+
+async function submitDemo(endpoint) {
+  const statusEl = document.getElementById('demo-status');
+  statusEl.textContent = 'Submitting...';
+  try {
+    const res = await fetch(`/demo/${endpoint}`, {
+      method: 'POST',
+      headers: { 'x-api-key': API_KEY },
+    });
+    const data = await res.json();
+    if (data.accepted === false) {
+      statusEl.textContent = `409 Rejected: ${data.reason} (idempotency working!)`;
+      statusEl.style.color = '#ff9f43';
+    } else {
+      statusEl.textContent = `Job queued: ${data.job_id}`;
+      statusEl.style.color = '#4ade80';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Failed to submit';
+    statusEl.style.color = '#ff5c5c';
+  }
+  setTimeout(() => { statusEl.textContent = ''; }, 4000);
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+
+</body>
+</html>
