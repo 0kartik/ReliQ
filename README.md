@@ -1,25 +1,23 @@
 # ReliableQueue (ReliQ)
 
-A fault-tolerant, event-driven job processing pipeline with guaranteed delivery — built for OneInbox AI Internship Hackathon 2026, Problem Statement 6 (Backend Developer track).
+A fault-tolerant, event-driven job processing pipeline with guaranteed delivery - built for OneInbox AI Internship Hackathon 2026, Problem Statement 6 (Backend Developer track).
 
 **Live demo:** https://reliablequeue-gateway.onrender.com
-**Problem Statement:** PS6 — Event-Driven Pipeline with Guaranteed Delivery
+
+**Problem Statement:** PS6 - Event-Driven Pipeline with Guaranteed Delivery
 
 ---
 
 ## What this is
 
-ReliableQueue processes asynchronous jobs — including LLM/RAG tasks — with three hard guarantees:
+ReliableQueue processes asynchronous jobs - including LLM/RAG tasks - with three hard guarantees:
 
 1. **Zero job loss**, even if a worker crashes mid-processing
 2. **Zero duplicate side-effects**, even when jobs are retried
 3. **Full observability** into every job's lifecycle
 
-It combines atomic Redis operations, idempotency enforcement, exponential backoff, dead-lettering, and a self-healing Reaper service — proven under a 500-job load test with a simulated worker crash (see [Load Test Results](#load-test-results) below).
+It combines atomic Redis operations, idempotency enforcement, exponential backoff, dead-lettering, and a self-healing Reaper service - proven under a 500-job load test with a simulated worker crash (see [Load Test Results](#load-test-results) below).
 
-## Architecture
-
-![Architecture Diagram](./architecture_diagram.png)
 
 **Flow:** Client → Gateway (auth, rate limit, schema validation) → Producer → Redis Queue (atomic `LMOVE` claim) → Worker Pool → Success, or Retry Queue (exponential backoff) → Dead Letter Queue after max retries. A Reaper service continuously recovers zombie jobs from crashed workers. All services expose Prometheus metrics and structured, trace-correlated logs.
 
@@ -27,7 +25,7 @@ It combines atomic Redis operations, idempotency enforcement, exponential backof
 
 | Category            | Implementation                                                                            |
 | ------------------- | ----------------------------------------------------------------------------------------- |
-| Atomic job claiming | Redis `LMOVE` — guarantees no two workers ever claim the same job                         |
+| Atomic job claiming | Redis `LMOVE` - guarantees no two workers ever claim the same job                         |
 | Idempotency         | Redis-backed idempotency store, enforced at both gateway and worker                       |
 | Retry with backoff  | Redis Sorted Set, exponential delays (1s → 5s → 30s → 60s → 120s)                         |
 | Dead-letter queue   | Jobs exceeding max retries quarantined for inspection, with Slack alerting                |
@@ -75,7 +73,7 @@ CI runs both automatically on every push via GitHub Actions (see `.github/workfl
 | Duplicate side-effects      | 0                                                                                         |
 | Jobs lost                   | 0                                                                                         |
 | Jobs in DLQ                 | 0                                                                                         |
-| Worker crash recovery       | Confirmed — Reaper detected and recovered the zombie job, replacement worker completed it |
+| Worker crash recovery       | Confirmed - Reaper detected and recovered the zombie job, replacement worker completed it |
 
 Full report: [`loadtest-report.md`](./loadtest-report.md)
 
@@ -88,19 +86,36 @@ This was built end-to-end in ~10 days for a hackathon. Given more time, next pri
 - Full Grafana/Jaeger/Loki stack (currently Prometheus + console-exported traces + structured JSON logs, which are compatible with but not yet wired into a full observability stack)
 - Secrets management via a dedicated vault instead of environment variables
 
-## Project structure
+## Project Structure
 
+```text
 src/
-├── gateway/ # HTTP layer: auth, rate limiting, schema validation
-├── producer/ # Job construction and enqueueing logic
-├── worker/ # Job processing: atomic claim, idempotency, LLM/RAG handler
-├── retry/ # Backoff scheduler
-├── reaper/ # Zombie job recovery
-└── lib/ # Shared: Redis client, logging, metrics, tracing, security
-tests/ # Unit tests (Node's built-in test runner)
-scripts/ # Load test and job generator utilities
-public/ # Live dashboard (vanilla JS, no build step)
-
+├── gateway/          → HTTP API Layer
+│   ├── Authentication
+│   ├── Rate Limiting
+│   └── Schema Validation
+│
+├── producer/         → Creates and enqueues jobs
+│
+├── worker/           → Processes jobs
+│   ├── Atomic Claim
+│   ├── Idempotency
+│   └── LLM / RAG Handler
+│
+├── retry/            → Exponential backoff scheduler
+├── reaper/           → Recovers zombie jobs
+│
+├── lib/              → Shared modules
+│   ├── Redis Client
+│   ├── Logger
+│   ├── Metrics
+│   ├── Tracing
+│   └── Security
+│
+├── tests/            → Unit tests
+├── scripts/          → Load testing utilities
+└── public/           → Live monitoring dashboard
+```
 ## Author
 
-Janardan Kartikeya Agnihotram — [GitHub](https://github.com/0kartik) · janardanagnihotram@gmail.com
+Janardan Kartikeya Agnihotram - [GitHub](https://github.com/0kartik) · janardanagnihotram@gmail.com
