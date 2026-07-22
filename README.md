@@ -34,6 +34,7 @@ It combines atomic Redis operations, idempotency enforcement, exponential backof
 | Observability       | Prometheus metrics, OpenTelemetry tracing, structured JSON logs (Loki-ready)              |
 | Security            | TLS on Redis connections, AES-256-GCM field-level encryption, API key auth, rate limiting |
 | Live dashboard      | Real-time queue depth, job history, and one-click demo triggers                           |
+| Containerization    | Dedicated Dockerfile per service (gateway, worker, scheduler, reaper) - not just Compose  |
 
 ## Tech stack
 
@@ -46,11 +47,18 @@ git clone https://github.com/0kartik/ReliQ
 cd ReliQ
 npm install
 cp .env.example .env   # fill in your own Gemini key, AES key, etc.
-docker compose up -d   # starts local Redis
-npm run dev             # runs gateway + worker + scheduler + reaper + a live job generator
+docker compose up --build   # builds and starts redis + gateway + worker + scheduler + reaper
 ```
 
+Each service (`gateway`, `worker`, `scheduler`, `reaper`) builds from its own dedicated Dockerfile (`Dockerfile.gateway`, `Dockerfile.worker`, `Dockerfile.scheduler`, `Dockerfile.reaper`), producing smaller, independently deployable images rather than one shared container image.
+
 Open `http://localhost:3000` for the live dashboard.
+
+### Running without Docker
+
+```bash
+npm run dev   # runs gateway + worker + scheduler + reaper + a live job generator locally
+```
 
 ## Running tests
 
@@ -80,7 +88,8 @@ Full report: [`loadtest-report.md`](./loadtest-report.md)
 
 This was built end-to-end in ~10 days for a hackathon. Given more time, next priorities would be:
 
-- Expanded test coverage (current suite covers idempotency/security/schema/retry-boundary logic; would add full integration tests against a live Redis instance in CI)
+- **Full integration test suite** - current tests cover idempotency/security/schema/retry-boundary logic in isolation; next step is an automated suite that boots a real Redis instance in CI, pushes a job through the entire gateway → worker → retry → DLQ lifecycle, and simulates a worker crash to assert Reaper recovery end-to-end
+- **CI/CD expansion** - current pipeline (GitHub Actions) runs lint, format check, and unit tests on every push; next step is adding Docker image builds and the integration suite above directly into CI, plus automated deploy
 - Kubernetes deployment (currently Docker Compose locally, Render in production)
 - Full Grafana/Jaeger/Loki stack (currently Prometheus + console-exported traces + structured JSON logs, which are compatible with but not yet wired into a full observability stack)
 - Secrets management via a dedicated vault instead of environment variables
@@ -88,6 +97,12 @@ This was built end-to-end in ~10 days for a hackathon. Given more time, next pri
 ## Project Structure
 
 ```text
+Dockerfile.gateway    → Gateway service image
+Dockerfile.worker     → Worker service image
+Dockerfile.scheduler  → Retry scheduler service image
+Dockerfile.reaper     → Reaper (zombie recovery) service image
+docker-compose.yml    → Orchestrates redis + all four services locally
+
 src/
 ├── gateway/          → HTTP API Layer
 │   ├── Authentication
@@ -111,9 +126,9 @@ src/
 │   ├── Tracing
 │   └── Security
 │
-├── tests/            → Unit tests
-├── scripts/          → Load testing utilities
-└── public/           → Live monitoring dashboard
+tests/                → Unit tests
+scripts/              → Load testing utilities
+public/               → Live monitoring dashboard
 ```
 
 ## Author

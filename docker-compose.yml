@@ -20,5 +20,56 @@ services:
       --tls-key-file /tls/redis.key
       --tls-ca-cert-file /tls/ca.crt
       --tls-auth-clients optional
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    container_name: reliablequeue-gateway
+    command: ["node", "src/gateway/server.js"]
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: reliablequeue-worker
+    command: ["node", "src/worker/worker.js"]
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: reliablequeue-scheduler
+    command: ["node", "src/retry/scheduler.js"]
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+
+  reaper:
+    build:
+      context: .
+      dockerfile: Dockerfile.reaper
+    container_name: reliablequeue-reaper
+    command: ["node", "src/reaper/reaper.js"]
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+
 volumes:
   redis_data:

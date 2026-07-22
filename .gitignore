@@ -1,3 +1,6 @@
 node_modules/
 .env
 gemini_test.json
+redis-tls/*.key
+redis-tls/*.srl
+redis-tls/*.csr
