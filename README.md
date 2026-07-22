@@ -10,6 +10,7 @@ A fault-tolerant, event-driven job processing pipeline with guaranteed delivery 
 ## What this is
 
 ReliableQueue processes asynchronous jobs — including LLM/RAG tasks — with three hard guarantees:
+
 1. **Zero job loss**, even if a worker crashes mid-processing
 2. **Zero duplicate side-effects**, even when jobs are retried
 3. **Full observability** into every job's lifecycle
@@ -24,18 +25,18 @@ It combines atomic Redis operations, idempotency enforcement, exponential backof
 
 ## Features
 
-| Category | Implementation |
-|---|---|
-| Atomic job claiming | Redis `LMOVE` — guarantees no two workers ever claim the same job |
-| Idempotency | Redis-backed idempotency store, enforced at both gateway and worker |
-| Retry with backoff | Redis Sorted Set, exponential delays (1s → 5s → 30s → 60s → 120s) |
-| Dead-letter queue | Jobs exceeding max retries quarantined for inspection, with Slack alerting |
-| Zombie recovery | Reaper service detects and recovers jobs from crashed workers |
-| LLM/RAG integration | Retrieval-augmented generation job type (Gemini), circuit-breaker protected |
-| Circuit breaker | Opossum-based, protects the pipeline from a failing LLM dependency |
-| Observability | Prometheus metrics, OpenTelemetry tracing, structured JSON logs (Loki-ready) |
-| Security | TLS on Redis connections, AES-256-GCM field-level encryption, API key auth, rate limiting |
-| Live dashboard | Real-time queue depth, job history, and one-click demo triggers |
+| Category            | Implementation                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Atomic job claiming | Redis `LMOVE` — guarantees no two workers ever claim the same job                         |
+| Idempotency         | Redis-backed idempotency store, enforced at both gateway and worker                       |
+| Retry with backoff  | Redis Sorted Set, exponential delays (1s → 5s → 30s → 60s → 120s)                         |
+| Dead-letter queue   | Jobs exceeding max retries quarantined for inspection, with Slack alerting                |
+| Zombie recovery     | Reaper service detects and recovers jobs from crashed workers                             |
+| LLM/RAG integration | Retrieval-augmented generation job type (Gemini), circuit-breaker protected               |
+| Circuit breaker     | Opossum-based, protects the pipeline from a failing LLM dependency                        |
+| Observability       | Prometheus metrics, OpenTelemetry tracing, structured JSON logs (Loki-ready)              |
+| Security            | TLS on Redis connections, AES-256-GCM field-level encryption, API key auth, rate limiting |
+| Live dashboard      | Real-time queue depth, job history, and one-click demo triggers                           |
 
 ## Tech stack
 
@@ -67,26 +68,28 @@ CI runs both automatically on every push via GitHub Actions (see `.github/workfl
 
 500 jobs submitted across 2 concurrent workers, with one worker force-killed mid-run to simulate a real crash.
 
-| Metric | Result |
-|---|---|
-| Jobs submitted | 500 |
-| Jobs completed exactly once | 500 |
-| Duplicate side-effects | 0 |
-| Jobs lost | 0 |
-| Jobs in DLQ | 0 |
-| Worker crash recovery | Confirmed — Reaper detected and recovered the zombie job, replacement worker completed it |
+| Metric                      | Result                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| Jobs submitted              | 500                                                                                       |
+| Jobs completed exactly once | 500                                                                                       |
+| Duplicate side-effects      | 0                                                                                         |
+| Jobs lost                   | 0                                                                                         |
+| Jobs in DLQ                 | 0                                                                                         |
+| Worker crash recovery       | Confirmed — Reaper detected and recovered the zombie job, replacement worker completed it |
 
 Full report: [`loadtest-report.md`](./loadtest-report.md)
 
 ## Known limitations & roadmap
 
 This was built end-to-end in ~10 days for a hackathon. Given more time, next priorities would be:
+
 - Expanded test coverage (current suite covers idempotency/security/schema/retry-boundary logic; would add full integration tests against a live Redis instance in CI)
 - Kubernetes deployment (currently Docker Compose locally, Render in production)
 - Full Grafana/Jaeger/Loki stack (currently Prometheus + console-exported traces + structured JSON logs, which are compatible with but not yet wired into a full observability stack)
 - Secrets management via a dedicated vault instead of environment variables
 
 ## Project structure
+
 src/
 ├── gateway/ # HTTP layer: auth, rate limiting, schema validation
 ├── producer/ # Job construction and enqueueing logic

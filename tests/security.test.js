@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { encryptField, decryptField, encryptSensitivePayloadFields, decryptSensitivePayloadFields } from "../src/lib/security.js";
+import {
+  encryptField,
+  decryptField,
+  encryptSensitivePayloadFields,
+  decryptSensitivePayloadFields,
+} from "../src/lib/security.js";
 import "dotenv/config";
 
 // Requires AES_ENCRYPTION_KEY to be set in env before running tests
