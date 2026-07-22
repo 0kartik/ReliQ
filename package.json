@@ -11,7 +11,7 @@
     "loadgen": "node scripts/loadgen.js",
     "lint": "eslint src scripts",
     "format": "prettier --write .",
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.js",
     "dev": "concurrently -n GATEWAY,WORKER,SCHEDULER,REAPER,LOADGEN -c blue,green,yellow,magenta,cyan \"npm:gateway\" \"npm:worker\" \"npm:scheduler\" \"npm:reaper\" \"npm:loadgen\"",
     "demo": "concurrently -n GATEWAY,WORKER,SCHEDULER,REAPER -c blue,green,yellow,magenta \"npm:gateway\" \"npm:worker\" \"npm:scheduler\" \"npm:reaper\""
   },
