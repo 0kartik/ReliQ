@@ -3,8 +3,6 @@ import "dotenv/config";
 const GATEWAY_URL = `http://localhost:${process.env.GATEWAY_PORT || 3000}`;
 const INTERVAL_MS = Number(process.env.LOADGEN_INTERVAL_MS) || 3000;
 
-
-
 const SAMPLE_QUERIES = [
   "How does ReliableQueue prevent duplicate job processing?",
   "What happens when a worker crashes mid-job?",
@@ -47,7 +45,10 @@ async function sendJob() {
       headers: { "Content-Type": "application/json", "x-api-key": process.env.API_KEY },
     });
     const data = await res.json();
-    console.log(`[loadgen] ${res.status} ${job.job_type} ${job.idempotency_key} ->`, data.status || data.error);
+    console.log(
+      `[loadgen] ${res.status} ${job.job_type} ${job.idempotency_key} ->`,
+      data.status || data.error
+    );
   } catch (err) {
     console.error("[loadgen] failed to send job:", err.message);
   }

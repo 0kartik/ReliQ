@@ -1,307 +1,103 @@
-# 🚀 ReliQ - AI Powered Reliable Queue System
+# ReliableQueue (ReliQ)
 
-> **Enterprise-grade distributed job queue with AI task processing, fault tolerance, retries, dead-letter queues, observability, and secure data handling.**
+A fault-tolerant, event-driven job processing pipeline with guaranteed delivery — built for OneInbox AI Internship Hackathon 2026, Problem Statement 6 (Backend Developer track).
 
-![Node.js](https://img.shields.io/badge/Node.js-20+-green)
-![Redis](https://img.shields.io/badge/Redis-TLS-red)
-![Express](https://img.shields.io/badge/Express.js-black)
-![OpenAI](https://img.shields.io/badge/AI-LLM-blue)
----
-
-# 📌 Problem Statement
-
-Modern applications rely heavily on asynchronous job processing for AI inference, notifications, report generation, document processing, image analysis, and background workflows. Traditional queue systems often struggle with worker crashes, duplicate execution, lost jobs, and limited observability.
-
-**ReliQ** is a production-inspired distributed queue system designed to execute AI-powered workloads reliably, securely, and efficiently.
+**Live demo:** https://reliablequeue-gateway.onrender.com
+**Problem Statement:** PS6 — Event-Driven Pipeline with Guaranteed Delivery
 
 ---
 
-# ✨ Features
+## What this is
 
-## 🤖 AI Job Processing
+ReliableQueue processes asynchronous jobs — including LLM/RAG tasks — with three hard guarantees:
+1. **Zero job loss**, even if a worker crashes mid-processing
+2. **Zero duplicate side-effects**, even when jobs are retried
+3. **Full observability** into every job's lifecycle
 
-- AI/LLM task execution
-- Context-aware request processing
-- Structured AI responses
-- Supports RAG-based workflows
+It combines atomic Redis operations, idempotency enforcement, exponential backoff, dead-lettering, and a self-healing Reaper service — proven under a 500-job load test with a simulated worker crash (see [Load Test Results](#load-test-results) below).
 
----
+## Architecture
 
-## ⚡ Reliable Queue
+![Architecture Diagram](./architecture_diagram.png)
 
-- Atomic job claiming
-- Distributed workers
-- High concurrency
-- At-least-once delivery
-- Idempotent processing
+**Flow:** Client → Gateway (auth, rate limit, schema validation) → Producer → Redis Queue (atomic `LMOVE` claim) → Worker Pool → Success, or Retry Queue (exponential backoff) → Dead Letter Queue after max retries. A Reaper service continuously recovers zombie jobs from crashed workers. All services expose Prometheus metrics and structured, trace-correlated logs.
 
----
+## Features
 
-## 🔄 Automatic Retry
+| Category | Implementation |
+|---|---|
+| Atomic job claiming | Redis `LMOVE` — guarantees no two workers ever claim the same job |
+| Idempotency | Redis-backed idempotency store, enforced at both gateway and worker |
+| Retry with backoff | Redis Sorted Set, exponential delays (1s → 5s → 30s → 60s → 120s) |
+| Dead-letter queue | Jobs exceeding max retries quarantined for inspection, with Slack alerting |
+| Zombie recovery | Reaper service detects and recovers jobs from crashed workers |
+| LLM/RAG integration | Retrieval-augmented generation job type (Gemini), circuit-breaker protected |
+| Circuit breaker | Opossum-based, protects the pipeline from a failing LLM dependency |
+| Observability | Prometheus metrics, OpenTelemetry tracing, structured JSON logs (Loki-ready) |
+| Security | TLS on Redis connections, AES-256-GCM field-level encryption, API key auth, rate limiting |
+| Live dashboard | Real-time queue depth, job history, and one-click demo triggers |
 
-Failed jobs are retried automatically using exponential backoff.
+## Tech stack
 
-```
-Job Failed
-     │
-     ▼
-Retry #1 (1s)
-     │
-Retry #2 (5s)
-     │
-Retry #3 (30s)
-     │
-Retry #4 (60s)
-     │
-Retry #5 (120s)
-     │
-     ▼
-Dead Letter Queue
-```
+Node.js, Express, ioredis, Redis (Upstash in production), Google Gemini (OpenAI-compatible endpoint), Opossum (circuit breaker), Prometheus (`prom-client`), OpenTelemetry, Pino (structured logging), Zod (schema validation).
 
----
-
-## ☠️ Dead Letter Queue
-
-Jobs that exceed retry limits are safely moved into a Dead Letter Queue (DLQ) for later inspection instead of being lost.
-
----
-
-## 🛡 Worker Recovery
-
-If a worker crashes while processing a job,
-
-ReliQ automatically:
-
-- Detects abandoned jobs
-- Recovers unfinished tasks
-- Requeues them safely
-
-No manual intervention required.
-
----
-
-## 🔐 Security
-
-- Redis TLS Encryption
-- AES-256-GCM Payload Encryption
-- Zod Schema Validation
-- API Rate Limiting
-- Secure Request Validation
-
----
-
-## 📈 Observability
-
-- Prometheus Metrics
-- Structured Logging
-- Trace IDs
-- Queue Monitoring
-- Performance Analytics
-
----
-
-## 💪 Fault Tolerance
-
-- Circuit Breaker
-- Retry Scheduler
-- Worker Reaper
-- Failure Isolation
-- Duplicate Prevention
-
----
-
-# 🏗 Architecture
-
-```text
-                  Client
-                     │
-                     ▼
-              API Gateway
-                     │
-       Request Validation
-                     │
-        Rate Limiting
-                     │
-             Redis Queue
-          ┌──────────────┐
-          │              │
-          ▼              ▼
-      Worker 1       Worker 2
-          │              │
-          └──────┬───────┘
-                 ▼
-            AI / LLM API
-                 │
-        Successful Job
-                 │
-                 ▼
-          Completed Queue
-
-           Failed Jobs
-                │
-                ▼
-        Retry Scheduler
-                │
-                ▼
-      Dead Letter Queue
-
-Worker Crash
-      │
-      ▼
- Reaper Service
-      │
-      ▼
- Job Requeued
-```
-
----
-
-# 🛠 Tech Stack
-
-| Category | Technology |
-|-----------|------------|
-| Backend | Node.js |
-| Framework | Express.js |
-| Queue | Redis |
-| Validation | Zod |
-| AI | OpenAI API |
-| Monitoring | Prometheus |
-| Logging | Pino |
-| Security | TLS, AES-256-GCM |
-| Resilience | Opossum Circuit Breaker |
-
----
-
-# 📂 Project Structure
-
-```text
-ReliQ/
-
-├── src/
-│   ├── gateway/
-│   ├── worker/
-│   ├── retry/
-│   ├── reaper/
-│   ├── middleware/
-│   ├── utils/
-│   └── config.js
-│
-├── scripts/
-│   ├── loadgen.js
-│   └── loadtest.js
-│
-├── docs/
-│   └── PRD_v2_IEEE830.md
-│
-├── docker-compose.yml
-├── package.json
-└── README.md
-```
-
----
-
-# 🚀 Getting Started
-
-## Clone Repository
+## Getting started (local)
 
 ```bash
-git clone https://github.com/yourusername/ReliQ.git
-
+git clone https://github.com/0kartik/ReliQ
 cd ReliQ
-```
-
-## Install Dependencies
-
-```bash
 npm install
+cp .env.example .env   # fill in your own Gemini key, AES key, etc.
+docker compose up -d   # starts local Redis
+npm run dev             # runs gateway + worker + scheduler + reaper + a live job generator
 ```
 
-## Configure Environment
+Open `http://localhost:3000` for the live dashboard.
+
+## Running tests
 
 ```bash
-cp .env.example .env
+npm run lint
+npm run test
 ```
 
-Update the required environment variables.
+CI runs both automatically on every push via GitHub Actions (see `.github/workflows/ci.yml`).
 
----
+## Load Test Results
 
-## Start Redis
+500 jobs submitted across 2 concurrent workers, with one worker force-killed mid-run to simulate a real crash.
 
-```bash
-docker compose up
-```
+| Metric | Result |
+|---|---|
+| Jobs submitted | 500 |
+| Jobs completed exactly once | 500 |
+| Duplicate side-effects | 0 |
+| Jobs lost | 0 |
+| Jobs in DLQ | 0 |
+| Worker crash recovery | Confirmed — Reaper detected and recovered the zombie job, replacement worker completed it |
 
----
+Full report: [`loadtest-report.md`](./loadtest-report.md)
 
-## Start the Project
+## Known limitations & roadmap
 
-```bash
-npm run demo
-```
+This was built end-to-end in ~10 days for a hackathon. Given more time, next priorities would be:
+- Expanded test coverage (current suite covers idempotency/security/schema/retry-boundary logic; would add full integration tests against a live Redis instance in CI)
+- Kubernetes deployment (currently Docker Compose locally, Render in production)
+- Full Grafana/Jaeger/Loki stack (currently Prometheus + console-exported traces + structured JSON logs, which are compatible with but not yet wired into a full observability stack)
+- Secrets management via a dedicated vault instead of environment variables
 
-or
+## Project structure
+src/
+├── gateway/ # HTTP layer: auth, rate limiting, schema validation
+├── producer/ # Job construction and enqueueing logic
+├── worker/ # Job processing: atomic claim, idempotency, LLM/RAG handler
+├── retry/ # Backoff scheduler
+├── reaper/ # Zombie job recovery
+└── lib/ # Shared: Redis client, logging, metrics, tracing, security
+tests/ # Unit tests (Node's built-in test runner)
+scripts/ # Load test and job generator utilities
+public/ # Live dashboard (vanilla JS, no build step)
 
-```bash
-npm run dev
-```
+## Author
 
----
-
-# 📊 Performance Highlights
-
-- ✅ Atomic queue operations
-- ✅ Zero duplicate job claims
-- ✅ Automatic retry handling
-- ✅ Worker crash recovery
-- ✅ Secure encrypted payloads
-- ✅ Prometheus monitoring
-- ✅ Horizontally scalable workers
-
----
-
-# 🧠 Distributed Systems Concepts
-
-ReliQ demonstrates several production-grade distributed systems principles:
-
-- Atomic Queue Operations
-- Distributed Worker Architecture
-- Idempotency Keys
-- Exponential Backoff
-- Dead Letter Queue
-- Worker Heartbeats
-- Crash Recovery
-- Circuit Breaker Pattern
-- Secure Payload Encryption
-- Rate Limiting
-- Observability
-- Fault Isolation
-
----
-
-# 🎯 Use Cases
-
-- AI Customer Support
-- Document Intelligence
-- Healthcare AI Pipelines
-- Financial Background Jobs
-- Notification Systems
-- Image Processing
-- Enterprise Workflow Automation
-- Large-scale AI Task Processing
-
----
-
-# 🔮 Future Roadmap
-
-- Kubernetes Deployment
-- Auto Scaling Workers
-- Web Dashboard
-- Queue Analytics
-- Multi-region Replication
-- Priority Queues
-- Vector Database Integration
-- Multi-Tenant Support
-
----
+Janardan Kartikeya Agnihotram — [GitHub](https://github.com/0kartik) · janardanagnihotram@gmail.com

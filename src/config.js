@@ -2,9 +2,18 @@ import "dotenv/config";
 
 export const config = {
   redis: {
-    host: process.env.NODE_ENV === "production" ? process.env.REDIS_PROD_HOST : (process.env.REDIS_HOST || "127.0.0.1"),
-    port: process.env.NODE_ENV === "production" ? Number(process.env.REDIS_PROD_PORT) : (Number(process.env.REDIS_PORT) || 6379),
-    password: process.env.NODE_ENV === "production" ? process.env.REDIS_PROD_PASSWORD : (process.env.REDIS_PASSWORD || "devpassword123"),
+    host:
+      process.env.NODE_ENV === "production"
+        ? process.env.REDIS_PROD_HOST
+        : process.env.REDIS_HOST || "127.0.0.1",
+    port:
+      process.env.NODE_ENV === "production"
+        ? Number(process.env.REDIS_PROD_PORT)
+        : Number(process.env.REDIS_PORT) || 6379,
+    password:
+      process.env.NODE_ENV === "production"
+        ? process.env.REDIS_PROD_PASSWORD
+        : process.env.REDIS_PASSWORD || "devpassword123",
   },
   gatewayPort: Number(process.env.GATEWAY_PORT) || 3000,
   queues: {
@@ -25,7 +34,7 @@ export const config = {
   processingTimeoutMs: Number(process.env.PROCESSING_TIMEOUT_MS) || 15000,
   reaperScanIntervalMs: Number(process.env.REAPER_SCAN_INTERVAL_MS) || 5000,
   schedulerPollIntervalMs: Number(process.env.SCHEDULER_POLL_INTERVAL_MS) || 1000,
- llm: {
+  llm: {
     apiKey: process.env.GEMINI_API_KEY,
     model: process.env.LLM_MODEL || "gemini-2.5-flash",
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",

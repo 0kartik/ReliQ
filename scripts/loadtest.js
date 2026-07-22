@@ -64,7 +64,7 @@ function spawnWorker(label) {
   return proc;
 }
 
-async function waitForCompletion(timeoutMs = 180000)  {
+async function waitForCompletion(timeoutMs = 180000) {
   const start = Date.now();
   let tick = 0;
   while (Date.now() - start < timeoutMs) {
@@ -98,7 +98,9 @@ async function checkDuplicates() {
 }
 
 async function run() {
-  console.log(`[loadtest] starting: ${TOTAL_JOBS} jobs, ${WORKER_COUNT} workers, forced crash at ${CRASH_AFTER_MS}ms`);
+  console.log(
+    `[loadtest] starting: ${TOTAL_JOBS} jobs, ${WORKER_COUNT} workers, forced crash at ${CRASH_AFTER_MS}ms`
+  );
   const startTime = Date.now();
 
   const workers = [];
@@ -115,7 +117,9 @@ async function run() {
     }
     await Promise.all(batch);
   }
-  console.log(`[loadtest] submission complete: ${results.accepted} accepted, ${results.rejected} rejected`);
+  console.log(
+    `[loadtest] submission complete: ${results.accepted} accepted, ${results.rejected} rejected`
+  );
 
   // Simulate a worker crash mid-processing
   setTimeout(() => {
@@ -161,9 +165,11 @@ job(s) in the processing list after the configured timeout and recovered them to
 queue, where the remaining/replacement worker picked them up and completed them normally.
 
 ## Conclusion
-${completedCount === results.accepted - dlqCount
-  ? "✅ Zero duplicate side-effects confirmed. Every accepted job reached exactly-once completion or was correctly quarantined in the DLQ, even with a simulated worker crash mid-run."
-  : "⚠️ Discrepancy detected — investigate before demo."}
+${
+  completedCount === results.accepted - dlqCount
+    ? "✅ Zero duplicate side-effects confirmed. Every accepted job reached exactly-once completion or was correctly quarantined in the DLQ, even with a simulated worker crash mid-run."
+    : "⚠️ Discrepancy detected — investigate before demo."
+}
 `;
 
   writeFileSync(REPORT_PATH, report);

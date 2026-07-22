@@ -31,7 +31,9 @@ app.use("/v1/jobs", limiter);
 function requireApiKey(req, res, next) {
   const key = req.headers["x-api-key"];
   if (!key || key !== process.env.API_KEY) {
-    return res.status(401).json({ error: "unauthorized", detail: "Missing or invalid x-api-key header" });
+    return res
+      .status(401)
+      .json({ error: "unauthorized", detail: "Missing or invalid x-api-key header" });
   }
   next();
 }
@@ -133,7 +135,12 @@ app.post("/demo/submit-llm", requireApiKey, async (_req, res) => {
 app.post("/demo/submit-duplicate", requireApiKey, async (_req, res) => {
   // Reuses the last known demo key on purpose, to visibly trigger a 409
   const key = global.__lastDemoKey || "demo-standard-none-yet";
-  const job = { idempotency_key: key, job_type: "standard", priority: 5, payload: { task: "duplicate-test" } };
+  const job = {
+    idempotency_key: key,
+    job_type: "standard",
+    priority: 5,
+    payload: { task: "duplicate-test" },
+  };
   const result = await enqueueJob(redis, job);
   res.json(result);
 });

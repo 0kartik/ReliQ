@@ -6,7 +6,10 @@ import { startMetricsServer } from "../lib/metricsServer.js";
 
 const redis = createRedisClient("scheduler");
 
-startMetricsServer(Number(process.env.PORT) || Number(process.env.SCHEDULER_METRICS_PORT) || 9103, "scheduler");
+startMetricsServer(
+  Number(process.env.PORT) || Number(process.env.SCHEDULER_METRICS_PORT) || 9103,
+  "scheduler"
+);
 
 async function tick() {
   const now = Date.now();

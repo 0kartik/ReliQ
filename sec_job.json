@@ -1,1 +1,6 @@
-{"idempotency_key":"sec-001","job_type":"standard","priority":5,"payload":{"task":"test","email":"kartik@example.com"}} 
+{
+  "idempotency_key": "sec-001",
+  "job_type": "standard",
+  "priority": 5,
+  "payload": { "task": "test", "email": "kartik@example.com" }
+}

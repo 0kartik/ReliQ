@@ -23,7 +23,10 @@ const redis = createRedisClient("worker");
 const WORKER_ID = `worker-${process.pid}`;
 const RECENT_JOBS_KEY = "recent:jobs";
 
-startMetricsServer(Number(process.env.PORT) || Number(process.env.WORKER_METRICS_PORT) || 9101, "worker");
+startMetricsServer(
+  Number(process.env.PORT) || Number(process.env.WORKER_METRICS_PORT) || 9101,
+  "worker"
+);
 
 async function claimJob() {
   const raw = await redis.lmove(config.queues.main, config.queues.processing, "RIGHT", "LEFT");
@@ -50,7 +53,10 @@ async function sendToRetryOrDLQ(job, raw, traceId) {
     };
     await redis.lpush(config.queues.dlq, JSON.stringify(dlqEntry));
     jobsDlqTotal.inc({ job_type: job.job_type });
-    logger.error(withTrace(traceId, { job_id: job.job_id, retries: nextRetryCount }), "job moved to DLQ");
+    logger.error(
+      withTrace(traceId, { job_id: job.job_id, retries: nextRetryCount }),
+      "job moved to DLQ"
+    );
     await sendDlqAlert(dlqEntry); // fire-and-forget, doesn't block worker loop
     return;
   }
@@ -101,10 +107,19 @@ async function processJob(job, raw) {
     jobsProcessedTotal.inc({ job_type: job.job_type });
     jobDurationSeconds.observe({ job_type: job.job_type }, durationSec);
 
-    logger.info(withTrace(traceId, { job_id: job.job_id, durationSec }), "job completed successfully");
+    logger.info(
+      withTrace(traceId, { job_id: job.job_id, durationSec }),
+      "job completed successfully"
+    );
     await redis.lpush(
       RECENT_JOBS_KEY,
-      JSON.stringify({ job_id: job.job_id, job_type: job.job_type, status: "completed", durationSec, at: new Date().toISOString() })
+      JSON.stringify({
+        job_id: job.job_id,
+        job_type: job.job_type,
+        status: "completed",
+        durationSec,
+        at: new Date().toISOString(),
+      })
     );
     await redis.ltrim(RECENT_JOBS_KEY, 0, 49); // keep last 50
     span.setStatus({ code: 1 });
