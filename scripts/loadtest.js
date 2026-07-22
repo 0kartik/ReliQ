@@ -50,7 +50,7 @@ async function submitJob(i) {
     } else {
       results.rejected++;
     }
-  } catch (err) {
+  } catch (_err) {
     results.rejected++;
   }
 }

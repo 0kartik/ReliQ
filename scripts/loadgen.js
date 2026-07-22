@@ -40,9 +40,8 @@ async function sendJob() {
   try {
     const res = await fetch(`${GATEWAY_URL}/v1/jobs`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(job),
       headers: { "Content-Type": "application/json", "x-api-key": process.env.API_KEY },
+      body: JSON.stringify(job),
     });
     const data = await res.json();
     console.log(
