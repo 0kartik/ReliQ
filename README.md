@@ -18,7 +18,6 @@ ReliableQueue processes asynchronous jobs - including LLM/RAG tasks - with three
 
 It combines atomic Redis operations, idempotency enforcement, exponential backoff, dead-lettering, and a self-healing Reaper service - proven under a 500-job load test with a simulated worker crash (see [Load Test Results](#load-test-results) below).
 
-
 **Flow:** Client → Gateway (auth, rate limit, schema validation) → Producer → Redis Queue (atomic `LMOVE` claim) → Worker Pool → Success, or Retry Queue (exponential backoff) → Dead Letter Queue after max retries. A Reaper service continuously recovers zombie jobs from crashed workers. All services expose Prometheus metrics and structured, trace-correlated logs.
 
 ## Features
@@ -116,6 +115,7 @@ src/
 ├── scripts/          → Load testing utilities
 └── public/           → Live monitoring dashboard
 ```
+
 ## Author
 
 Janardan Kartikeya Agnihotram - [GitHub](https://github.com/0kartik) · janardanagnihotram@gmail.com
