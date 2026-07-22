@@ -34,10 +34,10 @@ export const config = {
   processingTimeoutMs: Number(process.env.PROCESSING_TIMEOUT_MS) || 15000,
   reaperScanIntervalMs: Number(process.env.REAPER_SCAN_INTERVAL_MS) || 5000,
   schedulerPollIntervalMs: Number(process.env.SCHEDULER_POLL_INTERVAL_MS) || 1000,
-  llm: {
-    apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.LLM_MODEL || "gemini-2.5-flash",
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+ llm: {
+    apiKey: process.env.FEATHERLESS_API_KEY,
+    model: process.env.LLM_MODEL,
+    baseURL: "https://api.featherless.ai/v1",
   },
   circuitBreaker: {
     timeoutMs: Number(process.env.CIRCUIT_BREAKER_TIMEOUT_MS) || 10000,
